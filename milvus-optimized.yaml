@@ -1,0 +1,132 @@
+# Optimized Milvus Configuration for High-Throughput Search
+# This configuration increases thread pool sizes to better utilize available CPU cores
+
+# Query Node Configuration
+queryNode:
+  # Increase thread pool ratio for search operations
+  # Default: 4, Optimized: 8
+  # Formula: num_threads = ratio * num_cpu_cores
+  # With 40 cores: 8 * 40 = 320 threads for knowhere (vector search engine)
+  knowhereThreadPoolNumRatio: 8
+
+  # Increase scheduler queue sizes to handle more concurrent requests
+  scheduler:
+    receiveChanSize: 10240       # Default: 10240
+    unsolvedQueueSize: 10240     # Default: 10240
+    maxReadResultRate: 0         # No limit on result rate
+
+  # Enable caching for better performance
+  cache:
+    enabled: true
+    memoryLimit: 8589934592      # 8GB cache
+
+  # Query execution settings
+  gracefulStopTimeout: 30
+
+# Proxy Configuration
+proxy:
+  # Increase max concurrent tasks
+  # Default: 1024, Optimized: 4096
+  # This allows more concurrent search requests to be queued
+  maxTaskNum: 4096
+
+  # gRPC settings for better network throughput
+  grpc:
+    serverMaxRecvSize: 536870912  # 512MB
+    serverMaxSendSize: 536870912  # 512MB
+    clientMaxRecvSize: 536870912  # 512MB
+    clientMaxSendSize: 536870912  # 512MB
+
+# Query Coordinator
+queryCoord:
+  taskMergeCap: 1
+  taskExecutionCap: 256
+
+# Data Coordinator
+dataCoord:
+  segment:
+    maxSize: 1024
+    sealProportion: 0.25
+
+# Root Coordinator
+rootCoord:
+  dmlChannelNum: 256
+
+# Common Settings
+common:
+  # Use remote storage (MinIO)
+  storageType: remote
+
+  # Security settings
+  security:
+    authorizationEnabled: false
+
+# Quota and Limits
+quotaAndLimits:
+  enabled: true
+
+  # DML (insert/delete) rate limits
+  dml:
+    insertRate:
+      max: 100000              # Max 100K vectors/sec per collection
+
+  # DQL (query/search) limits
+  dql:
+    searchRate:
+      max: -1                  # Unlimited search rate
+
+  # Memory limits
+  limitWriting:
+    forceDeny: false           # Don't force deny writes
+    ttProtection:
+      enabled: true
+      maxTimeTickDelay: 300
+
+  limitReading:
+    forceDeny: false           # Don't force deny reads
+
+# Logging
+log:
+  level: info
+  file:
+    maxSize: 300              # MB
+    maxAge: 10                # days
+    maxBackups: 20
+
+# Metrics
+metrics:
+  port: 9091
+
+# Storage Configuration
+minio:
+  address: minio
+  port: 9000
+  accessKeyID: minioadmin
+  secretAccessKey: minioadmin
+  useSSL: false
+  bucketName: milvus-bucket
+  rootPath: file
+
+# Etcd Configuration
+etcd:
+  endpoints:
+    - etcd:2379
+  rootPath: by-dev
+  metaSubPath: meta
+  kvSubPath: kv
+
+# Message Queue (for standalone mode, uses RocksMQ)
+rocksmq:
+  path: /var/lib/milvus/rdb_data
+  rocksmqPageSize: 268435456   # 256MB
+  retentionTimeInMinutes: 4320 # 3 days
+  retentionSizeInMB: 8192      # 8GB
+
+# Index Coordinator
+indexCoord:
+  bindIndexNodeMode:
+    enable: false
+    address: localhost:22930
+    withCred: false
+  gc:
+    interval: 600              # 10 minutes
