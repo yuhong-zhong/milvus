@@ -383,7 +383,7 @@ def run_benchmark(
         field_name="vector",
         index_type="IVF_FLAT",
         metric_type="L2",
-        params={"nlist": 1024}
+        params={"nlist": 4096}
     )
 
     client.create_collection(
